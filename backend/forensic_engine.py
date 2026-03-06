@@ -85,10 +85,17 @@ class ForensicEngine:
         elif cam and cam.get('prnu_status') == 'Normal':
             score += 0.1; count += 1
             
-        if freq and freq.get('fft_verdict') == 'Artificial/Regular':
-            score += 0.9; count += 1
+        # [NEW] Override for extreme AI Frequency Grid (100% Artificial)
+        if freq and freq.get('fft_ai_prob', 0) > 95.0:
+            return 0.95
+            
+        if freq and freq.get('fft_verdict', '').startswith('Artificial/Regular'):
+            # Directly add the percentage (e.g., 65.5% AI -> +0.655)
+            prob = freq.get('fft_ai_prob', 90.0) / 100.0
+            score += prob; count += 1
         else:
-            score += 0.2; count += 1
+            prob = freq.get('fft_ai_prob', 10.0) / 100.0
+            score += prob; count += 1
             
         if col and col.get('sat_verdict') == 'Inconsistent':
             score += 0.7; count += 1
@@ -157,6 +164,7 @@ class ForensicEngine:
 
         return {
             "fft_energy": float(fft_energy),
+            "fft_ai_prob": float(fft_ai_prob),
             "fft_verdict": fft_verdict,
             "dwt_hh_ratio": float(hh_ratio),
             "dwt_verdict": f"{dwt_verdict} | {fingerprint_verdict}"
