@@ -234,6 +234,7 @@ async def analyze_content(file: UploadFile = File(...)):
         # we should treat it as AI for the sake of conflict detection.
         ai_votes = ml_report['ensemble']['summary']['ai_votes']
         total_models = ml_report['ensemble']['summary']['total_models']
+        real_votes = total_models - ai_votes
         
         ml_is_ai = ml_verdict == "AI Generated"
         
@@ -303,21 +304,37 @@ async def analyze_content(file: UploadFile = File(...)):
              patch_count = ml_report.get('patches', {}).get('ai_patch_count', 0)
              fusion_explanation = f"Localized AI Signature: {patch_count} AI patches detected (Severe Manipulation)"
 
-        # [NEW] Video Specific Logic
+        # [NEW] Balanced Video Specific Logic
         elif is_video:
              video_score = video_temporal_report.get('aggregate_video_score', 0) if video_temporal_report else 0
              # Include multi-frame spatial analysis
              spatial_ai_trigger = ml_is_ai or (max_frame_ai_prob > 80.0) or (avg_frame_ai_prob > 60.0)
              
              if spatial_ai_trigger or video_score > 0.50:
-                 final_verdict = "AI Generated"
+                 # Check if the ML Ensemble strongly believes this is a real video
+                 strong_real_ml_belief = (real_votes >= 7) and not spatial_ai_trigger
                  
-                 if video_score > 0.50:
-                     final_conf = max(ml_conf, max_frame_ai_prob, 88.0)
-                     fusion_explanation = "Temporal Anomalies Detected (Flicker/Blinks/rPPG)"
+                 # 1. Undeniable Temporal AI (Morphing/Melting) overrides everything
+                 if video_score > 0.65:
+                     final_verdict = "AI Generated"
+                     final_conf = max(ml_conf, max_frame_ai_prob, 92.0)
+                     fusion_explanation = "Severe Temporal Anomalies (Morphing/Optical Flow Chaos)"
+                     
+                 # 2. Moderate Temporal Anomaly BUT ML says Real
+                 elif strong_real_ml_belief and video_score > 0.50:
+                     final_verdict = "Suspicious / Uncertain"
+                     final_conf = 65.0
+                     fusion_explanation = f"ML Models Voted Real ({real_votes}/11) but camera temporal anomalies were detected"
+                     
+                 # 3. Standard AI Detection (ML and/or moderate temporal agree)
                  else:
-                     final_conf = max(ml_conf, max_frame_ai_prob)
-                     fusion_explanation = "Multiple Frames Analyzed as Strong AI"
+                     final_verdict = "AI Generated"
+                     if video_score > 0.50:
+                         final_conf = max(ml_conf, max_frame_ai_prob, 88.0)
+                         fusion_explanation = "Temporal Anomalies Detected (Flicker/Blinks/rPPG)"
+                     else:
+                         final_conf = max(ml_conf, max_frame_ai_prob)
+                         fusion_explanation = "Multiple Frames Analyzed as Strong AI"
              else:
                  final_verdict = "Real / Authentic"
                  final_conf = max(ml_conf, 100 - max_frame_ai_prob)
