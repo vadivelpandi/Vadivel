@@ -309,11 +309,11 @@ async def analyze_content(file: UploadFile = File(...)):
              # Include multi-frame spatial analysis
              spatial_ai_trigger = ml_is_ai or (max_frame_ai_prob > 80.0) or (avg_frame_ai_prob > 60.0)
              
-             if spatial_ai_trigger or video_score >= 0.45:
+             if spatial_ai_trigger or video_score > 0.50:
                  final_verdict = "AI Generated"
                  
-                 if video_score >= 0.45:
-                     final_conf = max(ml_conf, max_frame_ai_prob, 85.0)
+                 if video_score > 0.50:
+                     final_conf = max(ml_conf, max_frame_ai_prob, 88.0)
                      fusion_explanation = "Temporal Anomalies Detected (Flicker/Blinks/rPPG)"
                  else:
                      final_conf = max(ml_conf, max_frame_ai_prob)

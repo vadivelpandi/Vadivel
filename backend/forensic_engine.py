@@ -569,10 +569,10 @@ class ForensicEngine:
                     correlation = np.corrcoef(m_sig, a_sig)[0,1]
                     
                     if correlation < 0.15:  # Mouth moves independent of audio or audio plays with closed mouth
-                        # Only penalize if person is actually speaking (high mouth variance) or audio is loud
-                        if a_std > 200 or m_std > 0.015:
+                        # ONLY penalize if they are explicitly speaking loud and clear
+                        if a_std > 250 and m_std > 0.02:
                             sync_verdict = "Asynchronous (Deepfake)"
-                            vid_score += 0.25
+                            vid_score += 0.20
                         else:
                             sync_verdict = "Static/Quiet"
                     else:
@@ -589,10 +589,10 @@ class ForensicEngine:
             if ssim_scores:
                 mean_ssim = np.mean(ssim_scores)
                 variance_ssim = np.var(ssim_scores)
-                # Raised variance threshold to accommodate natural webcam noise
-                if variance_ssim > 0.015 and mean_ssim < 0.90:
+                # Raised variance threshold significantly to accommodate natural webcam noise
+                if variance_ssim > 0.03 and mean_ssim < 0.85:
                     flicker_verdict = "Unstable/AI"
-                    vid_score += 0.25
+                    vid_score += 0.20
                 else:
                     flicker_verdict = "Stable"
                     
@@ -614,9 +614,10 @@ class ForensicEngine:
                     elif val > 0.22 and state == 1:
                         state = 0
                 
-                if blinks == 0 and frame_count > fps * 7: # Deepfakes often don't blink correctly (wait 7s)
+                # For short clips (< 10s), 0 blinks is normal. Only penalize if it's a long video.
+                if blinks == 0 and frame_count > fps * 10: 
                     b_verdict = "Anomalous (No Blinks)"
-                    vid_score += 0.15 
+                    vid_score += 0.10 
                 else:
                     b_verdict = "Natural"
                     
@@ -646,14 +647,15 @@ class ForensicEngine:
                         video_metrics['rppg'] = {"bpm_estimate": float(bpm), "verdict": "Blood Flow Detected"}
                     else:
                         video_metrics['rppg'] = {"bpm_estimate": 0, "verdict": "No Pulse Pattern"}
-                        vid_score += 0.05 # Reduced penalty, real webcams often drop this heavily
+                        # vid_score += 0.05 # Removed penalty, real webcams/compression destroy this signal
                 else:
                     video_metrics['rppg'] = {"bpm_estimate": 0, "verdict": "No Pulse Pattern"}
-                    vid_score += 0.05 # Reduced penalty
+                    # vid_score += 0.05 # Removed penalty
             else:
                 video_metrics['rppg'] = {"bpm_estimate": 0, "verdict": "Not Enough Data"}
 
-            video_metrics['aggregate_video_score'] = min(vid_score, 1.0)
+            # Ensure final score is clamped
+            video_metrics['aggregate_video_score'] = min(max(vid_score, 0.0), 1.0)
             return video_metrics
 
         except Exception as e:
