@@ -295,17 +295,14 @@ async def analyze_content(file: UploadFile = File(...)):
              final_conf = 99.0
              fusion_explanation = "Metadata Override: High-quality camera data verified"
              
-        # [NEW RULE 1] FFT 0% Override -> REAL
-        elif forensic_report and forensic_report.get('frequency', {}).get('fft_ai_prob', 10.0) <= 0.0:
-             final_verdict = "Real / Authentic"
-             final_conf = 99.0
-             fusion_explanation = "Flawless Frequency Domain: 0.0% FFT Artificial Probability guarantees authentic origin"
-             
-        # [NEW RULE 2] ML + Forensics + FFT Agreement -> AI
-        elif ml_is_ai and forensic_score > 0.5 and (forensic_report and forensic_report.get('frequency', {}).get('fft_ai_prob', 0.0) > 50.0):
+        # [REFINED] Check for Global vs Local Conflict (Patch Threshold)
+        elif ml_report.get('patches', {}).get('conflict_detected') == "Yes" and ml_report.get('patches', {}).get('ai_patch_count', 0) > 5:
+             # Significant localized manipulation detected (> 5 AI patches)
              final_verdict = "AI Generated"
-             final_conf = max(ml_conf, 95.0)
-             fusion_explanation = "Full Consensus: ML Models, Spatial Forensics, and FFT grid all agree on AI Synthesis"
+             final_conf = 85.0
+             regions = ml_report.get('patches', {}).get('suspected_regions', 'Unknown')
+             patch_count = ml_report.get('patches', {}).get('ai_patch_count', 0)
+             fusion_explanation = f"Localized AI Signature: {patch_count} AI patches detected (Severe Manipulation)"
 
         # [NEW] Balanced Video Specific Logic
         elif is_video:
