@@ -129,7 +129,15 @@ class ForensicEngine:
         mask_size = 30
         mag[crow-mask_size:crow+mask_size, ccol-mask_size:ccol+mask_size] = 0
         fft_energy = np.mean(mag)
-        fft_verdict = "Artificial/Regular" if fft_energy > 175 else "Natural" 
+        
+        # Calculate AI probability percentage for FFT 
+        # (175 is the 50% threshold, ranging from 150 to 200)
+        fft_ai_prob = min(max(((fft_energy - 150) / 50.0) * 100.0, 0.0), 100.0)
+        
+        if fft_energy > 175:
+            fft_verdict = f"Artificial/Regular ({fft_ai_prob:.1f}% AI)"
+        else:
+            fft_verdict = f"Natural ({fft_ai_prob:.1f}% AI)"
         
         # DWT & Noise Fingerprint Check (Approximating DIreCT)
         coeffs = pywt.dwt2(gray, 'haar')
