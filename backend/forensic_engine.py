@@ -85,16 +85,18 @@ class ForensicEngine:
         elif cam and cam.get('prnu_status') == 'Normal':
             score += 0.1; count += 1
             
-        # [NEW] Override for extreme AI Frequency Grid (100% Artificial)
-        if freq and freq.get('fft_ai_prob', 0) > 95.0:
-            return 0.95
-            
+        # [NEW] Highly Weighted Algorithm for Frequency Grid
         if freq and freq.get('fft_verdict', '').startswith('Artificial/Regular'):
             # Directly add the percentage (e.g., 65.5% AI -> +0.655)
             prob = freq.get('fft_ai_prob', 90.0) / 100.0
-            score += prob; count += 1
+            
+            # Double vote weight for extreme AI grid signals, but do NOT short-circuit/override
+            if prob > 0.95:
+                score += (prob * 2); count += 2
+            else:
+                score += prob; count += 1
         else:
-            prob = freq.get('fft_ai_prob', 10.0) / 100.0
+            prob = freq and freq.get('fft_ai_prob', 10.0) / 100.0 or 0.1
             score += prob; count += 1
             
         if col and col.get('sat_verdict') == 'Inconsistent':
