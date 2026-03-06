@@ -361,18 +361,29 @@ async def analyze_content(file: UploadFile = File(...)):
                 fusion_explanation = "Agreed: ML & Forensics both confirm Real"
     
             elif ml_is_ai and not forensic_is_suspicious:
-                 # CONFLICT: ML says AI, but Camera/Physics look Real.
-                 # Logic: ML might be overfitting. 
-                 fusion_explanation = "Conflict: ML detected AI but Forensics passed (Weak Signal)"
-                 if ml_conf > 95.0:
-                     # ML is super confident, trust it but penalize
-                     final_verdict = "AI Generated"
-                     final_conf = ml_conf - 10 
-                 else:
-                     # ML is weak, Forensics is clean -> VETOED
-                     final_verdict = "Suspicious / Uncertain"
-                     final_conf = 55.0
-    
+             # CONFLICT: ML says AI, but Camera/Physics look Real.
+             fusion_explanation = "Conflict: ML detected AI but Forensics passed"
+             
+             # Tie-Breaker 1: Extremities & Biometrics
+             if forensic_report.get('extremity', {}).get('is_ai_extremity') or forensic_report.get('biometric', {}).get('is_ai_face'):
+                 final_verdict = "AI Generated"
+                 final_conf = max(ml_conf, 88.0)
+                 fusion_explanation = "Tie-Breaker: Structural anomalies in Face or Extremities confirmed AI origin."
+                 
+             # Tie-Breaker 2: Video Temporal Dynamics
+             elif is_video and video_temporal_report and video_temporal_report.get('aggregate_video_score', 0) > 0.50:
+                 final_verdict = "AI Generated"
+                 final_conf = max(ml_conf, 85.0)
+                 fusion_explanation = "Tie-Breaker: Temporal video anomalies (Flickering/Sync) confirmed AI origin."
+                 
+             # The Physics Veto
+             else:
+                 # If all physical, structural, and temporal tests pass perfectly, the ML is hallucinating.
+                 final_verdict = "Real / Authentic"
+                 final_conf = 85.0
+                 fusion_explanation = "Physics Veto: ML predicted AI, but flawless Face, Extremity, and Camera Physics guarantee authentic origin."
+                 print("DEBUG: Physics Veto triggered. Overriding ML False Positive to Real.")
+                 
             elif not ml_is_ai and forensic_is_suspicious:
                  # CONFLICT: ML says Real, but Forensics found artifacts.
                  # Logic: Deepfakes often fool ML but fail signal analysis.
