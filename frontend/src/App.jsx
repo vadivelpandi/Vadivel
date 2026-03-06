@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Upload, Image, Video, CheckCircle, XCircle, AlertCircle, Activity, FileText, Zap, BarChart3, Eye, Grid, ScanFace } from 'lucide-react';
 
 const App = () => {
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -19,7 +21,7 @@ const App = () => {
   const handleRequestOtp = async () => {
     setLoadingAuth(true);
     try {
-      const res = await fetch('/auth/request-otp', {
+      const res = await fetch(`${API_BASE}/auth/request-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -36,7 +38,7 @@ const App = () => {
   const handleVerifyOtp = async () => {
     setLoadingAuth(true);
     try {
-      const res = await fetch('/auth/verify-otp', {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: otp })
@@ -79,7 +81,7 @@ const App = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/analyze', {
+      const response = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
         body: formData,
       });
