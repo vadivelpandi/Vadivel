@@ -397,7 +397,8 @@ async def analyze_content(file: UploadFile = File(...)):
                 "step9_structure": forensic_report.get('structural'),
                 "step10_biometric": forensic_report.get('biometric'),
                 "step11_extremity": forensic_report.get('extremity'),
-                "step12_video_temporal": video_temporal_report
+                "step12_video_temporal": video_temporal_report,
+                "step13_optical_flow": video_temporal_report.get('optical_flow') if video_temporal_report else None
             },
             
             # Requested New Fields

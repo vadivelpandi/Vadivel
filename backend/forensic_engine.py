@@ -479,6 +479,10 @@ class ForensicEngine:
             mar_signals = []        # For Mouth lip sync
             ssim_scores = []        # For flickering
             prev_gray = None
+            
+            # For Optical Flow (Morphing/Merge Artifacts)
+            flow_variances = []
+            flow_magnitudes = []
 
             # Initialize a dedicated Video-mode FaceMesh to prevent timestamp graph crashes
             with self.mp_face_mesh.FaceMesh(
@@ -497,13 +501,35 @@ class ForensicEngine:
                     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     
-                    # -- Temporal Flickering --
+                    # -- Temporal Flickering & Dense Optical Flow (Morphing) --
                     if prev_gray is not None:
-                        # Very small for speed
+                        # 1. SSIM Flickering (Small for speed)
                         s_curr = cv2.resize(gray_frame, (160, 120))
                         s_prev = cv2.resize(prev_gray, (160, 120))
                         score, _ = ssim(s_curr, s_prev, full=True)
                         ssim_scores.append(score)
+                        
+                        # 2. Dense Optical Flow (Farneback)
+                        # Resize to medium resolution for flow to balance speed and accuracy
+                        f_curr = cv2.resize(gray_frame, (320, 240))
+                        f_prev = cv2.resize(prev_gray, (320, 240))
+                        
+                        flow = cv2.calcOpticalFlowFarneback(f_prev, f_curr, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+                        mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+                        
+                        # Only analyze regions with significant movement
+                        motion_mask = mag > 2.0
+                        if np.sum(motion_mask) > 100: # If at least 100 pixels are moving
+                            moving_angles = ang[motion_mask]
+                            moving_mags = mag[motion_mask]
+                            
+                            # Variance of angles indicates chaos/morphing (Expected: low variance for rigid physical objects)
+                            angle_var = np.var(moving_angles)
+                            avg_mag = np.mean(moving_mags)
+                            
+                            flow_variances.append(angle_var)
+                            flow_magnitudes.append(avg_mag)
+                            
                     prev_gray = gray_frame
 
                     results = video_face_mesh.process(rgb_frame)
@@ -653,6 +679,34 @@ class ForensicEngine:
                     # vid_score += 0.05 # Removed penalty
             else:
                 video_metrics['rppg'] = {"bpm_estimate": 0, "verdict": "Not Enough Data"}
+
+            # 5. Optical Flow (Morphing & Merging)
+            if flow_variances:
+                mean_var = np.mean(flow_variances)
+                max_var = np.max(flow_variances)
+                mean_mag = np.mean(flow_magnitudes)
+                
+                # High movement (mag) with extremely high directional chaos (variance) = morphing
+                if mean_mag > 2.5 and mean_var > 3.0:
+                    flow_verdict = "Severe Morphing/Merging Detected"
+                    vid_score += 0.35  # Massive penalty for explicitly melting objects
+                elif mean_var > 2.0:
+                    flow_verdict = "Suspicious Non-Rigid Movement"
+                    vid_score += 0.15
+                else:
+                    flow_verdict = "Natural Rigid Movement"
+                
+                video_metrics['optical_flow'] = {
+                    "angle_variance": float(mean_var),
+                    "mean_magnitude": float(mean_mag),
+                    "verdict": flow_verdict
+                }
+            else:
+                video_metrics['optical_flow'] = {
+                    "angle_variance": 0.0,
+                    "mean_magnitude": 0.0,
+                    "verdict": "Static Scene (No Movement)"
+                }
 
             # Ensure final score is clamped
             video_metrics['aggregate_video_score'] = min(max(vid_score, 0.0), 1.0)
