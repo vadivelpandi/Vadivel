@@ -43,13 +43,13 @@ if __name__ == "__main__":
     print("\n--- Testing Rigid Video ---")
     res1 = engine.analyze_video(rigid_file)
     print("Optical Flow Verdict:", res1.get('optical_flow', {}).get('verdict'))
-    print("Angle Variance:", res1.get('optical_flow', {}).get('angle_variance'))
+    print("Angle Variance Peak:", res1.get('optical_flow', {}).get('angle_variance_peak'))
     print("Aggregate Score:", res1.get('aggregate_video_score'))
     
     print("\n--- Testing Morphing/AI Video ---")
     res2 = engine.analyze_video(morph_file)
     print("Optical Flow Verdict:", res2.get('optical_flow', {}).get('verdict'))
-    print("Angle Variance:", res2.get('optical_flow', {}).get('angle_variance'))
+    print("Angle Variance Peak:", res2.get('optical_flow', {}).get('angle_variance_peak'))
     print("Aggregate Score:", res2.get('aggregate_video_score'))
     
     os.remove(rigid_file)

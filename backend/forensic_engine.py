@@ -682,28 +682,29 @@ class ForensicEngine:
 
             # 5. Optical Flow (Morphing & Merging)
             if flow_variances:
-                mean_var = np.mean(flow_variances)
-                max_var = np.max(flow_variances)
+                # Use the 95th percentile to catch localized morphing peaks
+                # A single crazy morph should penalize the whole video, regardless of average
+                peak_var = np.percentile(flow_variances, 95)
                 mean_mag = np.mean(flow_magnitudes)
                 
-                # High movement (mag) with extremely high directional chaos (variance) = morphing
-                if mean_mag > 2.5 and mean_var > 3.0:
+                # High movement with extremely high localized directional chaos (variance) = morphing
+                if mean_mag > 2.0 and peak_var > 2.5:
                     flow_verdict = "Severe Morphing/Merging Detected"
-                    vid_score += 0.35  # Massive penalty for explicitly melting objects
-                elif mean_var > 2.0:
+                    vid_score += 0.40  # Massive penalty guaranteeing AI conviction
+                elif peak_var > 1.5:
                     flow_verdict = "Suspicious Non-Rigid Movement"
                     vid_score += 0.15
                 else:
                     flow_verdict = "Natural Rigid Movement"
                 
                 video_metrics['optical_flow'] = {
-                    "angle_variance": float(mean_var),
+                    "angle_variance_peak": float(peak_var),
                     "mean_magnitude": float(mean_mag),
                     "verdict": flow_verdict
                 }
             else:
                 video_metrics['optical_flow'] = {
-                    "angle_variance": 0.0,
+                    "angle_variance_peak": 0.0,
                     "mean_magnitude": 0.0,
                     "verdict": "Static Scene (No Movement)"
                 }
