@@ -1,0 +1,160 @@
+--- d:\git\My-Projects\AI Detection System\frontend\src\App.jsx
++++ d:\git\My-Projects\AI Detection System\AI Detection System\frontend\src\App.jsx
+@@ -486,7 +486,7 @@
+                 </div>
+ 
+                 {/* Detailed Analysis */}
+-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
++                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {/* Forensic Analysis */}
+                   {/* 10-Step Forensic Report */}
+                   <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-purple-500/30">
+@@ -540,26 +540,13 @@
+                     </div>
+                   </div>
+ 
+-                  {/* Biometrics & Physics */}
++                  {/* Physics & Color */}
+                   <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-purple-500/30">
+                     <h4 className="font-semibold mb-3 flex items-center text-sm">
+                       <Eye className="w-4 h-4 mr-2" />
+-                      Biometrics & Physics Rules
++                      Physics & Color Rules
+                     </h4>
+                     <div className="space-y-2 text-sm">
+-                      {/* Biometrics & Extremities */}
+-                      <div className="flex justify-between border-b border-gray-700 pb-2 cursor-help" title={results.detailed_steps.step10_biometric?.reason}>
+-                        <span className="text-gray-400 hover:text-white">Facial/Eye Consistency</span>
+-                        <span className={`font-bold ${results.detailed_steps.step10_biometric?.is_ai_face ? 'text-red-400' : 'text-green-400'}`}>
+-                          {results.detailed_steps.step10_biometric?.is_ai_face ? 'AI Markers Found' : 'Plausible'}
+-                        </span>
+-                      </div>
+-                      <div className="flex justify-between border-b border-gray-700 pb-2 cursor-help" title={results.detailed_steps.step11_extremity?.reason}>
+-                        <span className="text-gray-400 hover:text-white">Limb/Extremity Analysis</span>
+-                        <span className={`font-bold ${results.detailed_steps.step11_extremity?.is_ai_extremity ? 'text-red-400' : 'text-green-400'}`}>
+-                          {results.detailed_steps.step11_extremity?.is_ai_extremity ? 'Anomalous Extremities' : 'Plausible'}
+-                        </span>
+-                      </div>
+                       <div className="flex justify-between border-b border-gray-700 pb-2">
+                         <span className="text-gray-400">Color Saturation</span>
+                         <span className="font-bold">{results.detailed_steps.step6_color?.sat_verdict || 'N/A'}</span>
+@@ -568,10 +555,57 @@
+                         <span className="text-gray-400">Lighting Logic</span>
+                         <span className="font-bold">{results.detailed_steps.step7_physics?.lighting_physics || 'N/A'}</span>
+                       </div>
++                      <div className="flex justify-between border-b border-gray-700 pb-2">
++                        <span className="text-gray-400">Edge Integrity</span>
++                        <span className="font-bold">{results.detailed_steps.step9_structure?.integrity || 'N/A'}</span>
++                      </div>
+                       <div className="flex justify-between pt-2">
+                         <span className="text-gray-400">DWT High-Freq</span>
+                         <span className="font-bold">{results.detailed_steps.step5_frequency?.dwt_verdict || 'N/A'}</span>
+                       </div>
++                    </div>
++                  </div>
++
++                  {/* Biometric Analysis (New) */}
++                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-purple-500/30">
++                    <h4 className="font-semibold mb-3 flex items-center text-sm">
++                      <Activity className="w-4 h-4 mr-2" />
++                      Biometric Asymmetry
++                    </h4>
++                    <div className="space-y-4 text-sm">
++
++                      <div className="bg-black/20 p-3 rounded-lg border border-purple-500/20">
++                        <div className="flex justify-between items-center mb-2">
++                          <span className="text-gray-400 text-xs uppercase">Face Scan</span>
++                          <span className="font-bold text-white">{results.detailed_steps.step10_biometric?.faces_detected || 0} Faces</span>
++                        </div>
++
++                        {results.detailed_steps.step10_biometric?.faces_detected > 0 ? (
++                          <>
++                            <div className="flex justify-between items-center border-t border-gray-700 pt-2 mb-1">
++                              <span className="text-gray-400">Eye Consistency</span>
++                              <span className={results.detailed_steps.step10_biometric?.eye_consistency === 'Low' ? 'text-red-400 font-bold' : 'text-green-400 font-bold'}>
++                                {results.detailed_steps.step10_biometric?.eye_consistency}
++                              </span>
++                            </div>
++                            <p className="text-xs text-gray-500 leading-tight">
++                              {results.detailed_steps.step10_biometric?.reason}
++                            </p>
++                          </>
++                        ) : (
++                          <p className="text-xs text-gray-500">No faces detected for analysis.</p>
++                        )}
++                      </div>
++
++                      <div className="text-xs text-gray-400">
++                        <p className="mb-1"><strong>Checks Performed:</strong></p>
++                        <ul className="list-disc list-inside space-y-0.5 ml-1">
++                          <li>Iris Circularity (Pupil Shape)</li>
++                          <li>Gaze Vector Alignment</li>
++                          <li>Inner-Canthal Distance</li>
++                        </ul>
++                      </div>
++
+                     </div>
+                   </div>
+                 </div>
+@@ -727,56 +761,17 @@
+               );
+             })()}
+ 
+-            {/* Video Temporal & Frame Analysis Section */}
+-
+-            {results && results.video_analysis && (
++            {/* Video Frame Analysis Section */}
++
++            {results && results.type === 'video' && results.videoAnalysis && (
+               <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-purple-500/30 lg:col-span-2">
+-
+-                {/* New Temporal Metrics */}
+-                {results.detailed_steps?.step12_video_temporal && (
+-                  <div className="mb-8">
+-                    <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+-                      <Activity className="w-5 h-5 mr-2" />
+-                      Temporal Dynamics Analysis
+-                    </h3>
+-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+-                      {/* rPPG */}
+-                      <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
+-                        <p className="text-gray-400 text-xs uppercase mb-1">rPPG (Heartbeat)</p>
+-                        <p className={`text-xl font-bold mb-1 ${results.detailed_steps.step12_video_temporal.rppg?.verdict.includes('AI') ? 'text-red-400' : 'text-green-400'}`}>
+-                          {results.detailed_steps.step12_video_temporal.rppg?.verdict}
+-                        </p>
+-                        <p className="text-xs text-gray-400">Est BPM: {results.detailed_steps.step12_video_temporal.rppg?.bpm_estimate?.toFixed(1) || '0.0'}</p>
+-                      </div>
+-
+-                      {/* Blinks */}
+-                      <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
+-                        <p className="text-gray-400 text-xs uppercase mb-1">Blink Rate Pattern</p>
+-                        <p className={`text-xl font-bold mb-1 ${results.detailed_steps.step12_video_temporal.blinks?.verdict.includes('Anomalous') ? 'text-red-400' : 'text-green-400'}`}>
+-                          {results.detailed_steps.step12_video_temporal.blinks?.verdict}
+-                        </p>
+-                        <p className="text-xs text-gray-400">Total Blinks: {results.detailed_steps.step12_video_temporal.blinks?.count || 0}</p>
+-                      </div>
+-
+-                      {/* Temporal Flicker */}
+-                      <div className="bg-black/20 p-4 rounded-lg border border-purple-500/20">
+-                        <p className="text-gray-400 text-xs uppercase mb-1">Inter-Frame Stability</p>
+-                        <p className={`text-xl font-bold mb-1 ${results.detailed_steps.step12_video_temporal.temporal_flickering?.verdict === 'Unstable/AI' ? 'text-red-400' : 'text-green-400'}`}>
+-                          {results.detailed_steps.step12_video_temporal.temporal_flickering?.verdict || 'Stable'}
+-                        </p>
+-                        <p className="text-xs text-gray-400">Variance: {results.detailed_steps.step12_video_temporal.temporal_flickering?.variance?.toFixed(4) || 'N/A'}</p>
+-                      </div>
+-                    </div>
+-                  </div>
+-                )}
+-
+                 <h3 className="text-lg font-semibold mb-4 text-white flex items-center">
+                   <Video className="w-5 h-5 mr-2" />
+-                  Frame-by-Frame Analysis (Sampled Frames)
++                  Frame-by-Frame Analysis (5 Sampled Frames)
+                 </h3>
+ 
+                 <div className="space-y-6">
+-                  {results.video_analysis.map((frame, frameIdx) => (
++                  {results.videoAnalysis.map((frame, frameIdx) => (
+                     <div key={frameIdx} className="bg-black/20 rounded-xl p-4 border border-purple-500/20">
+                       <div className="flex flex-col md:flex-row gap-4">
+                         {/* Frame Image */}
